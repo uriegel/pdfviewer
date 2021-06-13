@@ -21,8 +21,6 @@ template.innerHTML = `
 ` 
 
 // TODO https://stackoverflow.com/questions/13038146/pdf-js-scale-pdf-on-fixed-width
-// TODO Loading task destroy https://github.com/mozilla/pdf.js/issues/9048
-
 class PdfViewer extends HTMLElement {
     constructor() {
         super()
@@ -67,17 +65,21 @@ class PdfViewer extends HTMLElement {
     async run(url) {
       
 		this.pdfDoc = null
+		if (this.loadingTask)
+			this.loadingTask.destroy()
+		this.loadingTask = null
 		this.pageNum = 1
 		this.pageRendering = false
 		this.pageNumPending = null
 		this.scale = 0.8
         this.ctx = this.canvas.getContext('2d')
-      
+		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
         /**
          * Asynchronously downloads PDF.
          */
         const pagecount = this.shadowRoot.getElementById('page_count')
-        this.pdfDoc = await this.pdfjsLib.getDocument(url).promise
+		this.loadingTask = this.pdfjsLib.getDocument(url)
+        this.pdfDoc = await this.loadingTask.promise
       	pagecount.textContent = this.pdfDoc.numPages
       
       	// Initial/first page rendering
