@@ -11,8 +11,14 @@ template.innerHTML = `
             width: 100%;
             background-color: var(--pdfviewer-background-color);
         }   
-		canvas {
+		#canvasContainer {
 			flex-grow: 1;
+    		position: relative;
+			overflow-y: scroll;
+    		overflow-x: hidden;
+		}
+		canvas {
+			position: absolute;
 		}
     </style>
     <div id="control">
@@ -21,18 +27,21 @@ template.innerHTML = `
             <button id="next">Next</button>
             <span>Page: <span id="page_num"></span> / <span id="page_count"></span></span>
         </div>
-        <canvas id="the-canvas"></canvas>
+		<div id="canvasContainer">
+		    <canvas id="canvas"></canvas>
+		</div>
     </div>
 ` 
 
-// TODO Scrolling
+// TODO Window resize
 class PdfViewer extends HTMLElement {
     constructor() {
         super()
         this.attachShadow({ mode: 'open'})
         this.shadowRoot.appendChild(template.content.cloneNode(true))
         this.control = this.shadowRoot.getElementById("control")
-		this.canvas = this.shadowRoot.getElementById('the-canvas')
+		this.canvasContainer = this.shadowRoot.getElementById('canvasContainer')
+		this.canvas = this.shadowRoot.getElementById('canvas')
     }
 
     connectedCallback() {
@@ -58,9 +67,7 @@ class PdfViewer extends HTMLElement {
 
 		if (!this.pdfjsLib) {
 			await loadPdfScripts()
-	        // Loaded via <script> tag, create shortcut to access PDF.js exports.
 			this.pdfjsLib = window['pdfjs-dist/build/pdf']
-			// The workerSrc property shall be specified.
 			this.pdfjsLib.GlobalWorkerOptions.workerSrc = '//mozilla.github.io/pdf.js/build/pdf.worker.js'
 		}
 
@@ -78,29 +85,23 @@ class PdfViewer extends HTMLElement {
 		this.pageNumPending = null
         this.ctx = this.canvas.getContext('2d')
 		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
-        /**
-         * Asynchronously downloads PDF.
-         */
         const pagecount = this.shadowRoot.getElementById('page_count')
 		this.loadingTask = this.pdfjsLib.getDocument(url)
         this.pdfDoc = await this.loadingTask.promise
       	pagecount.textContent = this.pdfDoc.numPages
       
-      	// Initial/first page rendering
        	this.renderPage(this.pageNum)
     }
 
  	async renderPage(num) {
 		this.shadowRoot.getElementById('page_num').textContent = num
 		this.pageRendering = true;
-		// Using promise to fetch the page
 		const page = await this.pdfDoc.getPage(num)
 
-		const scale = this.canvas.clientWidth / page.getViewport({scale: 1.0}).width
+		const scale = this.canvasContainer.clientWidth / page.getViewport({scale: 1.0}).width
 		const viewport = page.getViewport({ scale })
 		this.canvas.height = viewport.height
 		this.canvas.width = viewport.width
-		// Render PDF page into canvas context
 		const renderContext = {
 			canvasContext: this.ctx,
 			viewport: viewport
@@ -113,10 +114,6 @@ class PdfViewer extends HTMLElement {
 		}
 	}
 
-	/**
-	 * If another page rendering in progress, waits until the rendering is
-	 * finised. Otherwise, executes rendering immediately.
-	 */
 	queueRenderPage(num) {
 		if (this.pageRendering) 
 			this.pageNumPending = num
