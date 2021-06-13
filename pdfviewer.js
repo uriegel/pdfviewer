@@ -21,7 +21,6 @@ template.innerHTML = `
 ` 
 
 // TODO https://stackoverflow.com/questions/13038146/pdf-js-scale-pdf-on-fixed-width
-// TODO replace global variables with member props
 // TODO replace inner functions of run with pdfviewer methods
 // TODO initial load mozilla pdf.js and pdf.worker.js with async await
 // TODO call async await pdfjsLib.getDocument(url).promise.then
@@ -32,6 +31,7 @@ class PdfViewer extends HTMLElement {
         this.attachShadow({ mode: 'open'})
         this.shadowRoot.appendChild(template.content.cloneNode(true))
         this.control = this.shadowRoot.getElementById("control")
+		this.canvas = this.shadowRoot.getElementById('the-canvas')
     }
 
     connectedCallback() {
@@ -60,39 +60,38 @@ class PdfViewer extends HTMLElement {
         // The workerSrc property shall be specified.
         pdfjsLib.GlobalWorkerOptions.workerSrc = '//mozilla.github.io/pdf.js/build/pdf.worker.js';
       
-        var pdfDoc = null,
-          pageNum = 1,
-          pageRendering = false,
-          pageNumPending = null,
-          scale = 0.8,
-          canvas = this.shadowRoot.getElementById('the-canvas'),
-          ctx = canvas.getContext('2d');
+		this.pdfDoc = null
+		this.pageNum = 1
+		this.pageRendering = false
+		this.pageNumPending = null
+		this.scale = 0.8
+        this.ctx = this.canvas.getContext('2d')
       
         /**
          * Get page info from document, resize canvas accordingly, and render page.
          * @param num Page number.
          */
         const renderPage = async num => {
-			//this.shadowRoot.getElementById('page_num').textContent = num
-			pageRendering = true;
+			this.shadowRoot.getElementById('page_num').textContent = num
+			this.pageRendering = true;
           	// Using promise to fetch the page
-          	const page = await pdfDoc.getPage(num)
+          	const page = await this.pdfDoc.getPage(num)
 			const viewport = page.getViewport({
-				scale: scale
+				scale: this.scale
 			})
-			canvas.height = viewport.height
-			canvas.width = viewport.width
+			this.canvas.height = viewport.height
+			this.canvas.width = viewport.width
 	
 			// Render PDF page into canvas context
 			const renderContext = {
-				canvasContext: ctx,
+				canvasContext: this.ctx,
 				viewport: viewport
 			}
 			await page.render(renderContext).promise
-			pageRendering = false
-			if (pageNumPending !== null) {
-				renderPage(pageNumPending)
-				pageNumPending = null
+			this.pageRendering = false
+			if (this.pageNumPending) {
+				renderPage(this.pageNumPending)
+				this.pageNumPending = null
 			}
         }
       
@@ -101,31 +100,31 @@ class PdfViewer extends HTMLElement {
          * finised. Otherwise, executes rendering immediately.
          */
         const queueRenderPage = num => {
-          	if (pageRendering) 
-            	pageNumPending = num
+          	if (this.pageRendering) 
+            	this.pageNumPending = num
           	else 
             	renderPage(num)
         }
       
         this.shadowRoot.getElementById('prev').addEventListener('click', () => {
-        	if (pageNum > 1) 
-				queueRenderPage(--pageNum)
+        	if (this.pageNum > 1) 
+				queueRenderPage(--this.pageNum)
 		})
       
         this.shadowRoot.getElementById('next').addEventListener('click', () => {
-			if (pageNum < pdfDoc.numPages) 
-			  	queueRenderPage(++pageNum)
+			if (this.pageNum < this.pdfDoc.numPages) 
+			  	queueRenderPage(++this.pageNum)
 		})
       
         /**
          * Asynchronously downloads PDF.
          */
         const pagecount = this.shadowRoot.getElementById('page_count')
-        pdfDoc = await pdfjsLib.getDocument(url).promise
-      	pagecount.textContent = pdfDoc.numPages
+        this.pdfDoc = await pdfjsLib.getDocument(url).promise
+      	pagecount.textContent = this.pdfDoc.numPages
       
       	// Initial/first page rendering
-       	renderPage(pageNum)
+       	renderPage(this.pageNum)
     }
 }
 
