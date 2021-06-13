@@ -7,15 +7,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'pdftest'",
+            "name": "Debug executable 'pdfviewer'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=pdftest",
-                    "--package=pdftest"
+                    "--bin=pdfviewer",
+                    "--package=pdfviewer"
                 ],
                 "filter": {
-                    "name": "pdftest",
+                    "name": "pdfviewer",
                     "kind": "bin"
                 }
             },
@@ -25,16 +25,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'pdftest'",
+            "name": "Debug unit tests in executable 'pdfviewer'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=pdftest",
-                    "--package=pdftest"
+                    "--bin=pdfviewer",
+                    "--package=pdfviewer"
                 ],
                 "filter": {
-                    "name": "pdftest",
+                    "name": "pdfviewer",
                     "kind": "bin"
                 }
             },

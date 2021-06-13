@@ -1,5 +1,5 @@
 [package]
-name = "pdftest"
+name = "pdfviewer"
 version = "0.1.0"
 authors = ["uriegel <uriegel@hotmail.de>"]
 edition = "2018"
