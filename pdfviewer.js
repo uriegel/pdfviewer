@@ -21,7 +21,6 @@ template.innerHTML = `
 ` 
 
 // TODO https://stackoverflow.com/questions/13038146/pdf-js-scale-pdf-on-fixed-width
-// TODO first eliminate next, use async await
 // TODO replace global variables with member props
 // TODO replace inner functions of run with pdfviewer methods
 // TODO initial load mozilla pdf.js and pdf.worker.js with async await
@@ -54,7 +53,7 @@ class PdfViewer extends HTMLElement {
         loadJS('//mozilla.github.io/pdf.js/build/pdf.js', document.body);
     }
 
-    run(url) {
+    async run(url) {
         // Loaded via <script> tag, create shortcut to access PDF.js exports.
         var pdfjsLib = window['pdfjs-dist/build/pdf'];
       
@@ -73,87 +72,61 @@ class PdfViewer extends HTMLElement {
          * Get page info from document, resize canvas accordingly, and render page.
          * @param num Page number.
          */
-        function renderPage(num) {
-          pageRendering = true;
-          // Using promise to fetch the page
-          pdfDoc.getPage(num).then(function(page) {
-            var viewport = page.getViewport({
-              scale: scale
-            });
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-      
-            // Render PDF page into canvas context
-            var renderContext = {
-              canvasContext: ctx,
-              viewport: viewport
-            };
-            var renderTask = page.render(renderContext);
-      
-            // Wait for rendering to finish
-            renderTask.promise.then(function() {
-              pageRendering = false;
-              if (pageNumPending !== null) {
-                // New page rendering is pending
-                renderPage(pageNumPending);
-                pageNumPending = null;
-              }
-            });
-          });
-      
-          // Update page counters
-          this.shadowRoot.getElementById('page_num').textContent = num;
+        const renderPage = async num => {
+			//this.shadowRoot.getElementById('page_num').textContent = num
+			pageRendering = true;
+          	// Using promise to fetch the page
+          	const page = await pdfDoc.getPage(num)
+			const viewport = page.getViewport({
+				scale: scale
+			})
+			canvas.height = viewport.height
+			canvas.width = viewport.width
+	
+			// Render PDF page into canvas context
+			const renderContext = {
+				canvasContext: ctx,
+				viewport: viewport
+			}
+			await page.render(renderContext).promise
+			pageRendering = false
+			if (pageNumPending !== null) {
+				renderPage(pageNumPending)
+				pageNumPending = null
+			}
         }
       
         /**
          * If another page rendering in progress, waits until the rendering is
          * finised. Otherwise, executes rendering immediately.
          */
-        function queueRenderPage(num) {
-          if (pageRendering) {
-            pageNumPending = num;
-          } else {
-            renderPage(num);
-          }
+        const queueRenderPage = num => {
+          	if (pageRendering) 
+            	pageNumPending = num
+          	else 
+            	renderPage(num)
         }
       
-        /**
-         * Displays previous page.
-         */
-        function onPrevPage() {
-          if (pageNum <= 1) {
-            return;
-          }
-          pageNum--;
-          queueRenderPage(pageNum);
-        }
-        this.shadowRoot.getElementById('prev').addEventListener('click', onPrevPage);
+        this.shadowRoot.getElementById('prev').addEventListener('click', () => {
+        	if (pageNum > 1) 
+				queueRenderPage(--pageNum)
+		})
       
-        /**
-         * Displays next page.
-         */
-        function onNextPage() {
-          if (pageNum >= pdfDoc.numPages) {
-            return;
-          }
-          pageNum++;
-          queueRenderPage(pageNum);
-        }
-        this.shadowRoot.getElementById('next').addEventListener('click', onNextPage);
+        this.shadowRoot.getElementById('next').addEventListener('click', () => {
+			if (pageNum < pdfDoc.numPages) 
+			  	queueRenderPage(++pageNum)
+		})
       
         /**
          * Asynchronously downloads PDF.
          */
-
         const pagecount = this.shadowRoot.getElementById('page_count')
-        pdfjsLib.getDocument(url).promise.then(function(pdfDoc_) {
-          pdfDoc = pdfDoc_;
-          pagecount.textContent = pdfDoc.numPages;
+        pdfDoc = await pdfjsLib.getDocument(url).promise
+      	pagecount.textContent = pdfDoc.numPages
       
-          // Initial/first page rendering
-          renderPage(pageNum);
-        });
-      }
+      	// Initial/first page rendering
+       	renderPage(pageNum)
+    }
 }
 
 customElements.define('pdf-viewer', PdfViewer)
