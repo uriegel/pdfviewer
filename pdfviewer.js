@@ -5,10 +5,15 @@ template.innerHTML = `
             --pdfviewer-background-color : gray;
         }
         #control {
+			display: flex;
+    		flex-direction: column;
             height: 100%;
             width: 100%;
             background-color: var(--pdfviewer-background-color);
         }   
+		canvas {
+			flex-grow: 1;
+		}
     </style>
     <div id="control">
         <div>
@@ -20,7 +25,7 @@ template.innerHTML = `
     </div>
 ` 
 
-// TODO https://stackoverflow.com/questions/13038146/pdf-js-scale-pdf-on-fixed-width
+// TODO Scrolling
 class PdfViewer extends HTMLElement {
     constructor() {
         super()
@@ -71,7 +76,6 @@ class PdfViewer extends HTMLElement {
 		this.pageNum = 1
 		this.pageRendering = false
 		this.pageNumPending = null
-		this.scale = 0.8
         this.ctx = this.canvas.getContext('2d')
 		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
         /**
@@ -91,12 +95,11 @@ class PdfViewer extends HTMLElement {
 		this.pageRendering = true;
 		// Using promise to fetch the page
 		const page = await this.pdfDoc.getPage(num)
-		const viewport = page.getViewport({
-			scale: this.scale
-		})
+
+		const scale = this.canvas.clientWidth / page.getViewport({scale: 1.0}).width
+		const viewport = page.getViewport({ scale })
 		this.canvas.height = viewport.height
 		this.canvas.width = viewport.width
-
 		// Render PDF page into canvas context
 		const renderContext = {
 			canvasContext: this.ctx,
