@@ -21,8 +21,7 @@ template.innerHTML = `
 ` 
 
 // TODO https://stackoverflow.com/questions/13038146/pdf-js-scale-pdf-on-fixed-width
-// TODO initial load mozilla pdf.js and pdf.worker.js with async await
-// TODO call async await pdfjsLib.getDocument(url).promise.then
+// TODO Loading task destroy https://github.com/mozilla/pdf.js/issues/9048
 
 class PdfViewer extends HTMLElement {
     constructor() {
@@ -45,28 +44,27 @@ class PdfViewer extends HTMLElement {
 		})
     }
 
-    load(pdfUrl) {
-        const loadJS = (url, location) => {
-            //url is URL of external file, implementationCode is the code
-            //to be called from the file, location is the location to 
-            //insert the <script> element
-          
-            const scriptTag = document.createElement('script')
-            scriptTag.src = url
-            scriptTag.onload = () => this.run(pdfUrl)
-            scriptTag.onreadystatechange = () => this.run(pdfUrl)
-          
-            location.appendChild(scriptTag)
-        }
-        loadJS('//mozilla.github.io/pdf.js/build/pdf.js', document.body);
-    }
+    async load(url) {
+		const loadPdfScripts = async () => new Promise(res => {
+            const script = document.createElement('script')
+            script.src = '//mozilla.github.io/pdf.js/build/pdf.js'
+            script.onload = () => res()
+            //scriptTag.onreadystatechange = () => this.run(pdfUrl)
+            document.body.appendChild(script)
+		})
+
+		if (!this.pdfjsLib) {
+			await loadPdfScripts()
+	        // Loaded via <script> tag, create shortcut to access PDF.js exports.
+			this.pdfjsLib = window['pdfjs-dist/build/pdf']
+			// The workerSrc property shall be specified.
+			this.pdfjsLib.GlobalWorkerOptions.workerSrc = '//mozilla.github.io/pdf.js/build/pdf.worker.js'
+		}
+
+		this.run(url)			
+	}
 
     async run(url) {
-        // Loaded via <script> tag, create shortcut to access PDF.js exports.
-        var pdfjsLib = window['pdfjs-dist/build/pdf'];
-      
-        // The workerSrc property shall be specified.
-        pdfjsLib.GlobalWorkerOptions.workerSrc = '//mozilla.github.io/pdf.js/build/pdf.worker.js';
       
 		this.pdfDoc = null
 		this.pageNum = 1
@@ -79,7 +77,7 @@ class PdfViewer extends HTMLElement {
          * Asynchronously downloads PDF.
          */
         const pagecount = this.shadowRoot.getElementById('page_count')
-        this.pdfDoc = await pdfjsLib.getDocument(url).promise
+        this.pdfDoc = await this.pdfjsLib.getDocument(url).promise
       	pagecount.textContent = this.pdfDoc.numPages
       
       	// Initial/first page rendering
