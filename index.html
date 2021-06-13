@@ -2,16 +2,23 @@
     <head>
         <title>Rust Web View</title>
         <meta charset="utf-8"/>
+        <link rel="stylesheet" href="styles/style.css">
     </head>
 
     <body>
-        <h1>Rust Web View</h1>
-        <p>
-            This is a sample page for displaying in <em>Rust Web View</em>
-        </p>
-        <h3>
-            This is the index.html file from the <em>examples</em> directory
-        </h3>
+        <script src="//mozilla.github.io/pdf.js/build/pdf.js"></script>
 
+        <h1>Mein PDF.js Previous/Next Beispiel</h1>
+        
+        <div>
+          <button id="prev">Previous</button>
+          <button id="next">Next</button>
+          &nbsp; &nbsp;
+          <span>Page: <span id="page_num"></span> / <span id="page_count"></span></span>
+        </div>
+        
+        <canvas id="the-canvas"></canvas>
+
+        <script src="scripts/script.js"></script>
     </body> 
 </html>
