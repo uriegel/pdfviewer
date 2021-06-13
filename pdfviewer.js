@@ -20,6 +20,13 @@ template.innerHTML = `
     </div>
 ` 
 
+// TODO https://stackoverflow.com/questions/13038146/pdf-js-scale-pdf-on-fixed-width
+// TODO first eliminate next, use async await
+// TODO replace global variables with member props
+// TODO replace inner functions of run with pdfviewer methods
+// TODO initial load mozilla pdf.js and pdf.worker.js with async await
+// TODO call async await pdfjsLib.getDocument(url).promise.then
+
 class PdfViewer extends HTMLElement {
     constructor() {
         super()
