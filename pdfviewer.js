@@ -31,7 +31,7 @@ class PdfViewer extends HTMLElement {
     connectedCallback() {
     }
 
-    load(url) {
+    load(pdfUrl) {
         const loadJS = (url, location) => {
             //url is URL of external file, implementationCode is the code
             //to be called from the file, location is the location to 
@@ -39,19 +39,15 @@ class PdfViewer extends HTMLElement {
           
             const scriptTag = document.createElement('script')
             scriptTag.src = url
-            scriptTag.onload = () => this.run()
-            scriptTag.onreadystatechange = () => this.run()
+            scriptTag.onload = () => this.run(pdfUrl)
+            scriptTag.onreadystatechange = () => this.run(pdfUrl)
           
             location.appendChild(scriptTag)
         }
         loadJS('//mozilla.github.io/pdf.js/build/pdf.js', document.body);
     }
 
-    run() {
-        // If absolute URL from the remote server is provided, configure the CORS
-        // header on that server.
-        var url = 'http://localhost:9867/getpdf?path=/home/uwe/e.pdf';
-      
+    run(url) {
         // Loaded via <script> tag, create shortcut to access PDF.js exports.
         var pdfjsLib = window['pdfjs-dist/build/pdf'];
       
