@@ -3,6 +3,7 @@ template.innerHTML = `
     <style>
         :host {
             --pdfviewer-background-color : gray;
+			--pdfviewer-color : white;
         }
         #control {
 			display: flex;
@@ -17,23 +18,30 @@ template.innerHTML = `
 			overflow-y: scroll;
     		overflow-x: hidden;
 		}
+		#pages {
+			color: var(--pdfviewer-color);
+		}
 		canvas {
 			position: absolute;
 		}
     </style>
     <div id="control">
         <div>
-            <button id="prev">Previous</button>
-            <button id="next">Next</button>
-            <span>Page: <span id="page_num"></span> / <span id="page_count"></span></span>
+			<button id="first">&#8676;</button>
+			<button id="prev">&#8592;</button>
+            <button id="next">&#8594;</button>
+			<button id="last">&#8677;</button>
+            <span id="pages"><span id="page_num"></span> / <span id="page_count"></span></span>
         </div>
 		<div id="canvasContainer">
 		    <canvas id="canvas"></canvas>
 		</div>
     </div>
 ` 
-
-// TODO Window resize
+// TODO First Last
+// TODO Toolbar
+// TODO Padding
+// TODO Thumbnails
 class PdfViewer extends HTMLElement {
     constructor() {
         super()
@@ -54,6 +62,14 @@ class PdfViewer extends HTMLElement {
 			if (this.pageNum < this.pdfDoc.numPages) 
 				this.queueRenderPage(++this.pageNum)
 		})
+
+		window.addEventListener('resize', () => {
+            if (!this.resizeTimer)
+                this.resizeTimer = setTimeout(() => {
+                    this.resizeTimer = 0
+					this.onWidthChanged()
+                }, 150)
+        })		
     }
 
     async load(url) {
@@ -75,7 +91,6 @@ class PdfViewer extends HTMLElement {
 	}
 
     async run(url) {
-      
 		this.pdfDoc = null
 		if (this.loadingTask)
 			this.loadingTask.destroy()
@@ -93,15 +108,24 @@ class PdfViewer extends HTMLElement {
        	this.renderPage(this.pageNum)
     }
 
+	onWidthChanged() {
+		if (this.canvasContainer.clientWidth != this.width) {
+			this.queueRenderPage(this.pageNum)
+			this.width = this.canvasContainer.clientWidth
+		}
+	}
+
  	async renderPage(num) {
 		this.shadowRoot.getElementById('page_num').textContent = num
 		this.pageRendering = true;
 		const page = await this.pdfDoc.getPage(num)
 
+		this.width = this.canvasContainer.clientWidth
 		const scale = this.canvasContainer.clientWidth / page.getViewport({scale: 1.0}).width
 		const viewport = page.getViewport({ scale })
 		this.canvas.height = viewport.height
 		this.canvas.width = viewport.width
+		
 		const renderContext = {
 			canvasContext: this.ctx,
 			viewport: viewport
